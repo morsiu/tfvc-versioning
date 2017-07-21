@@ -27,7 +27,7 @@ namespace TfsVersion
             TopChangesetId =
                 new TopChangesetRequest(
                         new TopChangesetUri(BaseUrl, ItemPath),
-                        PersonalAccessToken)
+                        new TfsPersonalAccessTokenAuthorization(PersonalAccessToken))
                     .Response()
                     .TopChangesetId();
             return true;
@@ -51,26 +51,41 @@ namespace TfsVersion
             }
         }
 
+        private sealed class TfsPersonalAccessTokenAuthorization
+        {
+            private readonly string _personalAccessToken;
+
+            public TfsPersonalAccessTokenAuthorization(string personalAccessToken)
+            {
+                _personalAccessToken = personalAccessToken;
+            }
+
+            public static implicit operator AuthenticationHeaderValue(TfsPersonalAccessTokenAuthorization authorization)
+            {
+                return 
+                    new AuthenticationHeaderValue(
+                        "Basic",
+                        Convert.ToBase64String(
+                            Encoding.ASCII.GetBytes(
+                                $":{authorization._personalAccessToken}")));
+            }
+        }
+
         private sealed class TopChangesetRequest
         {
             private readonly Uri _uri;
-            private readonly string _personalAccessToken;
+            private readonly AuthenticationHeaderValue _authorization;
 
-            public TopChangesetRequest(Uri uri, string personalAccessToken)
+            public TopChangesetRequest(Uri uri, AuthenticationHeaderValue authorization)
             {
                 _uri = uri;
-                _personalAccessToken = personalAccessToken;
+                _authorization = authorization;
             }
 
             public TopChangesetResponse Response()
             {
                 var httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue(
-                        "Basic",
-                        Convert.ToBase64String(
-                            Encoding.ASCII.GetBytes(
-                                $":{_personalAccessToken}")));
+                httpClient.DefaultRequestHeaders.Authorization = _authorization;
                 httpClient.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
                 return 
