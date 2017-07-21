@@ -84,13 +84,15 @@ namespace TfsVersion
 
             public TopChangesetResponse Response()
             {
-                var httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Authorization = _authorization;
-                httpClient.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue("application/json"));
-                return 
-                    new TopChangesetResponse(
-                        httpClient.GetStringAsync(_uri).Result);
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = _authorization;
+                    httpClient.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue("application/json"));
+                    return
+                        new TopChangesetResponse(
+                            httpClient.GetStringAsync(_uri).Result);
+                }
             }
         }
 
@@ -105,12 +107,14 @@ namespace TfsVersion
 
             public int TopChangesetId()
             {
-                dynamic responseAsJson =
-                    new JsonSerializer().Deserialize(
-                        new JsonTextReader(
-                            new StringReader(
-                                _response)));
-                return responseAsJson.value[0].changesetId;
+                using (var stringReader = new StringReader(_response))
+                using (var jsonTextReader = new JsonTextReader(stringReader))
+                {
+                    dynamic responseAsJson =
+                        new JsonSerializer()
+                            .Deserialize(jsonTextReader);
+                    return responseAsJson.value[0].changesetId;
+                }
             }
         }
     }
