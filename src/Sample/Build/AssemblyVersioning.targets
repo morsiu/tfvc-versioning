@@ -10,9 +10,8 @@
   </ItemGroup>
   <Target Name="GetTopChangesetIdFromTfs">
     <TfsVersion
-      BaseUrl="https://morsiu.visualstudio.com/"
+      BaseUrl="https://morsiu.visualstudio.com/TfvcTest2"
       PersonalAccessToken="$(TfsVersionPersonalAccessToken)"
-      Project="TfvcTest2"
       ItemPath="$/TfvcTest2/BuildProcessTemplates">
       <Output TaskParameter="TopChangesetId" PropertyName="TopChangesetId" />
     </TfsVersion>

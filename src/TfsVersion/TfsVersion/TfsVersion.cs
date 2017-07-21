@@ -1,35 +1,18 @@
-﻿using System;
+﻿using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Microsoft.VisualStudio.Services.Common;
-using Microsoft.TeamFoundation.SourceControl.WebApi;
-using Microsoft.Build.Framework;
+using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace TfsVersion
 {
     public sealed class TfsVersion : Task
     {
-        public override bool Execute()
-        {
-            new RedirectionOfNewtonsoftJsonBetween0And8To8(); // Ensure its static constructor runs
-            TopChangesetId = 
-                new TfvcHttpClient(
-                        new Uri(BaseUrl),
-                        new VssBasicCredential(string.Empty, PersonalAccessToken))
-                    .GetChangesetsAsync(
-                        project: Project,
-                        orderby: "ChangesetId",
-                        searchCriteria: new TfvcChangesetSearchCriteria { ItemPath = ItemPath },
-                        top: 1)
-                    .Result[0]
-                    .ChangesetId;
-            return true;
-        }
-
         [Output]
         public int TopChangesetId { get; set; }
-
-        [Required]
-        public string Project { get; set; }
 
         [Required]
         public string BaseUrl { get; set; }
@@ -38,5 +21,16 @@ namespace TfsVersion
         public string PersonalAccessToken { get; set; }
 
         public string ItemPath { get; set; }
+
+        public override bool Execute()
+        {
+            var uri = new Uri($"{BaseUrl}/_apis/tfvc/changesets?api-version=1.0&searchCriteria.itemPath={ItemPath}&searchCriteria.orderBy=id desc&$top=1");
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($":{PersonalAccessToken}")));
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            dynamic response = new JsonSerializer().Deserialize(new JsonTextReader(new StringReader(httpClient.GetStringAsync(uri).Result)));
+            TopChangesetId = (int)response.value[0].changesetId;
+            return true;
+        }
     }
 }
