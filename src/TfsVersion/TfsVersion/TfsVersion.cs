@@ -24,11 +24,23 @@ namespace TfsVersion
 
         public override bool Execute()
         {
-            var uri = new Uri($"{BaseUrl}/_apis/tfvc/changesets?api-version=1.0&searchCriteria.itemPath={ItemPath}&searchCriteria.orderBy=id desc&$top=1");
             var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($":{PersonalAccessToken}")));
-            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            dynamic response = new JsonSerializer().Deserialize(new JsonTextReader(new StringReader(httpClient.GetStringAsync(uri).Result)));
+            httpClient.DefaultRequestHeaders.Authorization = 
+                new AuthenticationHeaderValue(
+                    "Basic",
+                    Convert.ToBase64String(
+                        Encoding.ASCII.GetBytes(
+                            $":{PersonalAccessToken}")));
+            httpClient.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
+            dynamic response = 
+                new JsonSerializer().Deserialize(
+                    new JsonTextReader(
+                        new StringReader(
+                            httpClient.GetStringAsync(
+                                    new Uri(
+                                        $"{BaseUrl}/_apis/tfvc/changesets?api-version=1.0&searchCriteria.itemPath={ItemPath}&searchCriteria.orderBy=id desc&$top=1"))
+                                .Result)));
             TopChangesetId = (int)response.value[0].changesetId;
             return true;
         }
