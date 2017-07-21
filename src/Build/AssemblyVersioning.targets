@@ -5,7 +5,8 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="TfsVersion.targets"/>
   <ItemGroup>
-    <Version Include="Version.g.txt"/>
+    <VersionFile Include="Version.g.txt"/>
+    <AssemblyInfoFile Include="AssemblyInfo.g.cs"/>
   </ItemGroup>
   <Target Name="GetTfsTopChangesetId">
     <TfsVersion
@@ -19,39 +20,39 @@
   <Target 
     Name="WriteTopChangesetIdToVersionItems"
     DependsOnTargets="GetTfsTopChangesetId"
-    Outputs="@(Version)">
+    Outputs="@(VersionFile)">
     <ItemGroup>
       <VersionLine Include="$(TopChangesetId)"/>
     </ItemGroup>
     <WriteLinesToFile
-      File="@(Version)"
+      File="@(VersionFile)"
       Encoding="UTF-8"
       Overwrite="True"
       WriteOnlyWhenDifferent="True"
-      Lines="@(VersionLine)" />
+      Lines="@(VersionFileLine)" />
   </Target>
   <Target
     Name="GenerateCompileItemWithAssemblyVersionAttributes"
     DependsOnTargets="WriteTopChangesetIdToVersionItems"
-    Inputs="@(Version)"
-    Outputs="@(Version->'AssemblyInfo.g.cs')">
+    Inputs="@(VersionFile)"
+    Outputs="@(AssemblyInfoFile)">
     <ItemGroup>
-      <Compile Include="@(Version->'AssemblyInfo.g.cs')" />
+      <Compile Include="@(AssemblyInfoFile)" />
     </ItemGroup>
     <ItemGroup>
       <ReadLinesFromFile
-        File="@(Version)"
-        Lines="@(VersionLine)" />
+        File="@(VersionFile)"
+        Lines="@(VersionFileLine)" />
       <AssemblyVersionAttributes Include="AssemblyVersion">
-        <_Parameter1>1.0.0.@(VersionLine)</_Parameter1>
+        <_Parameter1>1.0.0.@(VersionFileLine)</_Parameter1>
       </AssemblyVersionAttributes>
       <AssemblyAttributes Include="AssemblyFileVersion">
-        <_Parameter1>1.0.0.@(VersionLine)</_Parameter1>
+        <_Parameter1>1.0.0.@(VersionFileLine)</_Parameter1>
       </AssemblyAttributes>
     </ItemGroup>
     <WriteCodeFragment
       Language="C#"
-      OutputFile="@(Version->'AssemblyInfo.g.cs')"
+      OutputFile="@(AssemblyInfoFile)"
       AssemblyAttributes="@(AssemblyVersionAttributes)" />
   </Target>
 </Project>
