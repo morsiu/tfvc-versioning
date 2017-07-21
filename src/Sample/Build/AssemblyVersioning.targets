@@ -5,7 +5,7 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="TfsVersion.targets"/>
   <ItemGroup>
-    <VersionFile Include="Version.g.txt"/>
+    <VersionFile Include=".\..\Version.g.txt"/>
     <AssemblyInfoFile Include="AssemblyInfo.g.cs"/>
   </ItemGroup>
   <Target Name="GetTopChangesetIdFromTfs">
