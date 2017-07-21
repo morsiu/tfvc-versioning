@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project 
+  ToolsVersion="15.0"
+  DefaultTargets="GenerateCompileItemWithAssemblyVersionAttributes"
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="TfsVersion.targets"/>
+  <ItemGroup>
+    <Version Include="Version.g.txt"/>
+  </ItemGroup>
+  <Target Name="GetTfsTopChangesetId">
+    <TfsVersion
+      BaseUrl="https://morsiu.visualstudio.com/"
+      PersonalAccessToken="$(TfsVersionPersonalAccessToken)"
+      Project="TfvcTest2"
+      ItemPath="$/TfvcTest2/BuildProcessTemplates">
+      <Output TaskParameter="TopChangesetId" PropertyName="TopChangesetId" />
+    </TfsVersion>
+  </Target>
+  <Target 
+    Name="WriteTopChangesetIdToVersionItems"
+    DependsOnTargets="GetTfsTopChangesetId"
+    Outputs="@(Version)">
+    <ItemGroup>
+      <VersionLine Include="$(TopChangesetId)"/>
+    </ItemGroup>
+    <WriteLinesToFile
+      File="@(Version)"
+      Encoding="UTF-8"
+      Overwrite="True"
+      WriteOnlyWhenDifferent="True"
+      Lines="@(VersionLine)" />
+  </Target>
+  <Target
+    Name="GenerateCompileItemWithAssemblyVersionAttributes"
+    DependsOnTargets="WriteTopChangesetIdToVersionItems"
+    Inputs="@(Version)"
+    Outputs="@(Version->'AssemblyInfo.g.cs')">
+    <ItemGroup>
+      <Compile Include="@(Version->'AssemblyInfo.g.cs')" />
+    </ItemGroup>
+    <ItemGroup>
+      <ReadLinesFromFile
+        File="@(Version)"
+        Lines="@(VersionLine)" />
+      <AssemblyVersionAttributes Include="AssemblyVersion">
+        <_Parameter1>1.0.0.@(VersionLine)</_Parameter1>
+      </AssemblyVersionAttributes>
+      <AssemblyAttributes Include="AssemblyFileVersion">
+        <_Parameter1>1.0.0.@(VersionLine)</_Parameter1>
+      </AssemblyAttributes>
+    </ItemGroup>
+    <WriteCodeFragment
+      Language="C#"
+      OutputFile="@(Version->'AssemblyInfo.g.cs')"
+      AssemblyAttributes="@(AssemblyVersionAttributes)" />
+  </Target>
+</Project>
