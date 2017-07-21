@@ -8,7 +8,7 @@
     <VersionFile Include="Version.g.txt"/>
     <AssemblyInfoFile Include="AssemblyInfo.g.cs"/>
   </ItemGroup>
-  <Target Name="GetTfsTopChangesetId">
+  <Target Name="GetTopChangesetIdFromTfs">
     <TfsVersion
       BaseUrl="https://morsiu.visualstudio.com/"
       PersonalAccessToken="$(TfsVersionPersonalAccessToken)"
@@ -18,11 +18,11 @@
     </TfsVersion>
   </Target>
   <Target 
-    Name="WriteTopChangesetIdToVersionItems"
-    DependsOnTargets="GetTfsTopChangesetId"
+    Name="WriteTopChangesetIdToVersionFile"
+    DependsOnTargets="GetTopChangesetIdFromTfs"
     Outputs="@(VersionFile)">
     <ItemGroup>
-      <VersionLine Include="$(TopChangesetId)"/>
+      <VersionFileLine Include="$(TopChangesetId)"/>
     </ItemGroup>
     <WriteLinesToFile
       File="@(VersionFile)"
@@ -32,27 +32,39 @@
       Lines="@(VersionFileLine)" />
   </Target>
   <Target
-    Name="GenerateCompileItemWithAssemblyVersionAttributes"
-    DependsOnTargets="WriteTopChangesetIdToVersionItems"
+    Name="WriteAssemblyVersionAttributesToAssemblyInfoFile"
+    DependsOnTargets="WriteTopChangesetIdToVersionFile"
     Inputs="@(VersionFile)"
     Outputs="@(AssemblyInfoFile)">
+    <ReadLinesFromFile
+      File="@(VersionFile)"
+      Lines="@(VersionFileLine)" />
+    <Error
+      Text="The file @(VersionFile) does not exists or is empty, so there's no changeset id available for generation of file with assembly version attributes."
+      Condition="@(VersionFileLine) == ''" />
+    <PropertyGroup>
+      <ChangesetId>@(VersionFileLine, '')</ChangesetId>
+    </PropertyGroup>
+    <Error
+      Text="The changeset id '$(ChangesetId)' stored in file @(VersionFile) is not a valid number."
+      Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch($(ChangesetId), '^\d+$'))"/>
     <ItemGroup>
-      <Compile Include="@(AssemblyInfoFile)" />
-    </ItemGroup>
-    <ItemGroup>
-      <ReadLinesFromFile
-        File="@(VersionFile)"
-        Lines="@(VersionFileLine)" />
       <AssemblyVersionAttributes Include="AssemblyVersion">
-        <_Parameter1>1.0.0.@(VersionFileLine)</_Parameter1>
+        <_Parameter1>1.0.0.$(ChangesetId)</_Parameter1>
       </AssemblyVersionAttributes>
       <AssemblyAttributes Include="AssemblyFileVersion">
-        <_Parameter1>1.0.0.@(VersionFileLine)</_Parameter1>
+        <_Parameter1>1.0.0.$(ChangesetId)</_Parameter1>
       </AssemblyAttributes>
     </ItemGroup>
     <WriteCodeFragment
       Language="C#"
       OutputFile="@(AssemblyInfoFile)"
       AssemblyAttributes="@(AssemblyVersionAttributes)" />
+    <ItemGroup>
+      <Compile Include="@(AssemblyInfoFile)" />
+    </ItemGroup>
   </Target>
+  <Target
+    Name="GenerateAssemblyVersionAttributes"
+    DependsOnTargets="WriteAssemblyVersionAttributesToAssemblyInfoFile"/>
 </Project>
